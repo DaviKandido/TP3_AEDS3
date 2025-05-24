@@ -5,27 +5,41 @@ import entidades.Ator;
 import entidades.Elenco;
 import entidades.Episodio;
 import entidades.Serie;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+
+import aeds3.ElementoLista;
+import aeds3.ListaInvertida;
 import modelo.ArquivoAtor;
 import modelo.ArquivoElenco;
 import modelo.ArquivoEpisodios;
 import modelo.ArquivoSeries;
 
 public class MenuSeries {
+    ListaInvertida lista;
     ArquivoSeries arqSeries = new ArquivoSeries();
     ArquivoEpisodios arqEpisodios = new ArquivoEpisodios();
     private static Scanner console = new Scanner(System.in);
-    MenuEpisodios menuEpisodio = new MenuEpisodios(); 
+    MenuEpisodios menuEpisodio = new MenuEpisodios();
     MenuAtores menuAtores = new MenuAtores();
     ArquivoElenco arqElenco = new ArquivoElenco();
     ArquivoAtor arqAtores = new ArquivoAtor();
 
-
     public MenuSeries() throws Exception {
         arqSeries = new ArquivoSeries();
         arqEpisodios = new ArquivoEpisodios();
+        File d = new File("dados");
+        if (!d.exists())
+            d.mkdir();
+        lista = new ListaInvertida(100, "dados/dicionario_serie.listainv.db", "dados/blocos_serie.listainv.db");
     }
 
     public void menu() throws Exception {
@@ -131,7 +145,6 @@ public class MenuSeries {
             System.out.print("Streaming (min. 3 letras): ");
             streaming = console.nextLine();
         } while (streaming.length() < 3);
-        
 
         System.out.print("\nConfirma a inclusão da série? (S/N) ");
         char resp = console.nextLine().charAt(0);
@@ -139,6 +152,25 @@ public class MenuSeries {
             try {
                 Serie s = new Serie(nome, ano, sinopse, streaming, genero, classind);
                 idSerie = arqSeries.create(s);
+
+                // separar termos em vetor de palvras
+                String[] termos = nome.toLowerCase().split("\\W+");
+
+                List<String> termosFiltrados = new ArrayList<>();
+                List<Integer> frequencias = new ArrayList<>();
+
+                // filtrar termos que nao sao stopwords e frequencia absoluta
+                gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+                // calcular frequencia relativa aos termos
+                List<Float> tf = calcularFrequencia(frequencias);
+                for (int i = 0; i < termosFiltrados.size(); i++) {
+                    String termo = termosFiltrados.get(i);
+                    float freqRelativa = tf.get(i);
+                    lista.incrementaEntidades();
+                    lista.create(termo, new ElementoLista(idSerie, freqRelativa));
+                }
+                // lista.print();
+
                 System.out.println("Série incluída com sucesso.");
 
                 boolean dadosCorretos = false;
@@ -160,11 +192,11 @@ public class MenuSeries {
 
                         for (int i = 0; i < qtd; i++) {
                             System.out.println("\tAtor " + i);
-                            try{
+                            try {
                                 menuAtores.incluirAtores(idSerie);
                                 dadosCorretos = true;
                             } catch (Exception e) {
-                                System.out.println("Erro ao incluir atores: " + e.getMessage()); 
+                                System.out.println("Erro ao incluir atores: " + e.getMessage());
                             }
                         }
 
@@ -172,37 +204,71 @@ public class MenuSeries {
                 } while (dadosCorretos == false);
             } catch (Exception e) {
                 System.out.println("Erro ao incluir série.");
+                e.printStackTrace();
             }
         }
-
-
     }
 
-    //Buscar Série pelo nome
-    public void buscarSerie() {
+    // Buscar Série pelo nome
+    public void buscarSerie() throws Exception {
         System.out.println("\nBusca de Série");
 
         System.out.print("Nome da Série: ");
-        String nome = console.nextLine();
+        String nome = console.nextLine().toLowerCase();
+
+        String[] termos = nome.split("\\W+");
+        List<String> termosFiltrados = new ArrayList<>();
+        List<Integer> frequencias = new ArrayList<>();
+        // filtrar termos que nao sao stopwords e frequencia absoluta
+        gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
 
         System.out.println();
+
         try {
-            Serie[] series = arqSeries.readNome(nome);
-            if (series != null && series.length > 0) {
-                System.out.println("Séries encontradas:");
-                for (Serie s : series) {
-                    mostraSerie(s);
+            List<Integer> ids = new ArrayList<>();
+            List<Float> tfidfs = new ArrayList<>();
+
+            for (String s : termosFiltrados) {
+                ElementoLista[] resultados = lista.read(s);
+                if (resultados.length == 0) {
+                    System.out.println("Nenhuma série encontrada com o nome '" + nome + "'.");
+                } else {
+                    // calcular idf
+                    float idf = calcularIDF(resultados);
+
+                    for (ElementoLista el : resultados) {
+                        float tf = el.getFrequencia();
+                        float tfidf = tf * idf;
+
+                        int id = el.getId();
+                        int index = ids.indexOf(id);
+
+                        if (index != -1) {
+                            // Se ja existe, soma
+                            tfidfs.set(index, tfidfs.get(index) + tfidf);
+                        } else {
+                            // Se nao existe, adiciona
+                            ids.add(id);
+                            tfidfs.add(tfidf);
+                        }
+                    }
                 }
-            } else {
-                System.out.println("Nenhuma série encontrada com esse nome.");
+
+                System.out.println("Séries encontradas:");
+                for (int i = 0; i < ids.size(); i++) {
+                    Serie serie = arqSeries.read(ids.get(i));
+                    if (serie != null) {
+                        mostraSerie(serie);
+                        System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
+                    }
+                }
             }
-            
         } catch (Exception e) {
             System.out.println("Erro ao buscar série.");
         }
     }
 
-    //Atualizar Série pelo nome
+    // Atualizar Série pelo nome
     public void alterarSerie() throws Exception {
         System.out.println("\nAlteração de Série");
 
@@ -213,8 +279,8 @@ public class MenuSeries {
         try {
             Serie[] serie = arqSeries.readNome(nome);
             if (serie != null) {
-                
-                for (int i=0; i < serie.length; i++) {
+
+                for (int i = 0; i < serie.length; i++) {
                     System.out.println("\t[" + i + "]");
                     mostraSerie(serie[i]);
                 }
@@ -223,10 +289,10 @@ public class MenuSeries {
                 int num = console.nextInt();
                 console.nextLine();
 
-                //testar se o numero digitado e' valido
+                // testar se o numero digitado e' valido
                 if (num >= 0 && serie[num] != null) {
 
-                    //------------- Dados a serem atualizados ----------------//
+                    // ------------- Dados a serem atualizados ----------------//
                     System.out.print("Novo nome (ou Enter para manter): ");
                     String novoNome = console.nextLine();
                     if (!novoNome.isEmpty()) {
@@ -270,7 +336,11 @@ public class MenuSeries {
                     if (resp == 'S' || resp == 's') {
                         boolean alterado = arqSeries.update(serie[num]);
                         if (alterado) {
-                            System.out.println("Série alterada com sucesso.");
+                            
+                            if (lista.update(nome, new ElementoLista(serie[num].getID(), frequencia)))
+                                System.out.println("Série alterada com sucesso.");
+                            else
+                            System.out.println("Termo não atualizado.");
                         } else {
                             System.out.println("Erro ao alterar a série.");
                         }
@@ -288,10 +358,10 @@ public class MenuSeries {
         }
     }
 
-    //Excluir Série pelo nome
+    // Excluir Série pelo nome
     public void excluirSerie() throws Exception {
         System.out.println("\nExclusão de Série");
-        
+
         System.out.print("Nome da Série: ");
         String nome = console.nextLine();
         System.out.println();
@@ -299,7 +369,7 @@ public class MenuSeries {
         try {
             Serie[] serie = arqSeries.readNome(nome);
             if (serie != null && serie.length > 0) {
-                for (int i=0; i < serie.length; i++) {
+                for (int i = 0; i < serie.length; i++) {
                     System.out.println("\t[" + i + "]");
                     mostraSerie(serie[i]);
                 }
@@ -308,7 +378,7 @@ public class MenuSeries {
                 int num = console.nextInt();
                 console.nextLine();
 
-                //testar se o numero digitado e' valido
+                // testar se o numero digitado e' valido
                 if (num >= 0 && serie[num] != null) {
                     Episodio[] episodios = arqEpisodios.readEpisodiosSerie(serie[num].getID());
                     if (episodios != null) {
@@ -321,9 +391,13 @@ public class MenuSeries {
                         System.out.println("A série não foi excluída.");
                         return;
                     }
-                    
+
                     boolean excluido = arqSeries.delete(serie[num].getID());
                     if (excluido) {
+                        if (lista.delete(nome, serie[num].getID()))
+                            lista.print();
+                        else
+                            System.out.println("Termo não excluído.");
                         System.out.println("Série excluída com sucesso.");
                     } else {
                         System.out.println("Erro ao excluir a série.");
@@ -342,33 +416,33 @@ public class MenuSeries {
     public void mostrarEpSerie() {
         System.out.println("\nBusca de episódio de uma série:");
         System.out.print("De qual série deseja buscar o episódio? (Nome da série): ");
-        
+
         String nomeSerieVinculada = console.nextLine();
         System.out.println();
         boolean dadosCorretos = false;
-        
+
         do {
             try {
                 Serie[] series = arqSeries.readNome(nomeSerieVinculada);
-                
+
                 if (series != null && series.length > 0) {
                     System.out.println("Séries encontradas:");
                     for (int i = 0; i < series.length; i++) {
                         System.out.print("[" + i + "] ");
                         mostraSerie(series[i]);
                     }
-                    
+
                     System.out.print("\nDigite o número da série escolhida: ");
                     if (console.hasNextInt()) {
                         int num = console.nextInt();
                         console.nextLine(); // Limpar buffer
-                        
+
                         if (num < 0 || num >= series.length) {
                             System.err.println("Número inválido!");
                         } else {
                             System.out.println("Episódios da série " + series[num].getNome() + ":");
                             Episodio[] episodios = arqEpisodios.readEpisodiosSerie(series[num].getID());
-                            
+
                             if (episodios != null && episodios.length > 0) {
                                 int temporadaAtual = -1;
                                 for (Episodio ep : episodios) {
@@ -398,37 +472,36 @@ public class MenuSeries {
         } while (!dadosCorretos);
     }
 
-
-        public void mostrarAtoresDaSerie(){
+    public void mostrarAtoresDaSerie() {
         System.out.println("\nBusca de atores de uma série:");
         System.out.print("De qual série deseja buscar os atores? (Nome da série): ");
-        
+
         String nomeSerieVinculada = console.nextLine();
         System.out.println();
         boolean dadosCorretos = false;
-        
+
         do {
             try {
                 Serie[] series = arqSeries.readNome(nomeSerieVinculada);
-                
+
                 if (series != null && series.length > 0) {
                     System.out.println("Séries encontradas:");
                     for (int i = 0; i < series.length; i++) {
                         System.out.print("[" + i + "] ");
                         mostraSerie(series[i]);
                     }
-                    
+
                     System.out.print("\nDigite o número da série escolhida: ");
                     if (console.hasNextInt()) {
                         int num = console.nextInt();
                         console.nextLine(); // Limpar buffer
-                        
+
                         if (num < 0 || num >= series.length || series[num] == null) {
                             System.err.println("Número inválido!");
                         } else {
                             System.out.println("\nAtores da série " + series[num].getNome() + ":");
                             Ator[] atores = arqAtores.readAtoresDaSerie(series[num].getID());
-                            
+
                             if (atores != null && atores.length > 0) {
                                 for (Ator at : atores) {
                                     System.out.println();
@@ -437,7 +510,7 @@ public class MenuSeries {
                                     Elenco[] elenco = arqElenco.read(at.getID(), series[num].getID());
                                     if (elenco != null && elenco.length > 0) {
                                         System.out.println("Fazendo o papel de: ");
-                                        for(Elenco el : elenco) {
+                                        for (Elenco el : elenco) {
                                             mostraElenco(el);
                                         }
                                     }
@@ -462,19 +535,20 @@ public class MenuSeries {
         } while (!dadosCorretos);
     }
 
-    //Mostrar Ator
+    // Mostrar Ator
     public void mostraAtor(Ator ator) {
         if (ator != null) {
             System.out.println("----------------------");
             System.out.printf("Nome....: %s%n", ator.getNome());
-            System.out.printf("Data de nascimento: %s%n", ator.getDataNasc().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            System.out.printf("Data de nascimento: %s%n",
+                    ator.getDataNasc().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             System.out.printf("Nacionalidade....: %s%n", ator.getNacionalidade());
             System.out.println("----------------------");
         }
 
     }
 
-    //Mostrar Papel
+    // Mostrar Papel
     public void mostraElenco(Elenco elenco) {
         if (elenco != null) {
             System.out.println("----------------------");
@@ -485,10 +559,9 @@ public class MenuSeries {
 
     }
 
-
-    //Mostrar Série
+    // Mostrar Série
     public void mostraSerie(Serie serie) {
-        try{
+        try {
             if (serie != null) {
                 System.out.println("----------------------");
                 System.out.printf("Nome....: %s%n", serie.getNome());
@@ -507,16 +580,91 @@ public class MenuSeries {
     }
 
     public void povoar() throws Exception {
-            arqSeries.create(new Serie( "Breaking Bad", LocalDate.of(2008, 1, 20), "Um professor de química vira traficante de metanfetamina.", "Netflix", "Drama/Crime", "18+"));
-            arqSeries.create(new Serie( "Stranger Things", LocalDate.of(2016, 7, 15), "Crianças descobrem segredos sobrenaturais em sua cidade.", "Netflix", "Ficção Científica/Terror", "14+"));
-            arqSeries.create(new Serie( "Game of Thrones", LocalDate.of(2011, 4, 17), "Famílias nobres lutam pelo controle do trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
-            arqSeries.create(new Serie( "The Witcher", LocalDate.of(2019, 12, 20), "Geralt de Rívia enfrenta monstros e conflitos políticos.", "Netflix", "Fantasia/Ação", "16+"));
-            arqSeries.create(new Serie( "Dark", LocalDate.of(2017, 12, 1), "Viagens no tempo revelam segredos sombrios de uma cidade.", "Netflix", "Ficção Científica/Suspense", "16+"));
-            arqSeries.create(new Serie("The Boys", LocalDate.of(2019, 7, 26), "Super-heróis corruptos são combatidos por um grupo rebelde.", "Prime Video", "Ação/Drama", "18+"));
-            arqSeries.create(new Serie( "Peaky Blinders", LocalDate.of(2013, 9, 12), "Gangue britânica liderada por Thomas Shelby.", "Netflix", "Crime/Drama", "16+"));
-            arqSeries.create(new Serie( "The Mandalorian", LocalDate.of(2019, 11, 12), "Caçador de recompensas protege uma criança misteriosa.", "Disney+", "Ficção Científica/Aventura", "12+"));
-            arqSeries.create(new Serie( "House of the Dragon", LocalDate.of(2022, 8, 21), "A guerra civil da família Targaryen pelo trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
-            arqSeries.create(new Serie( "Loki", LocalDate.of(2021, 6, 9), "O deus da trapaça embarca em viagens pelo multiverso.", "Disney+", "Ação/Ficção Científica", "12+"));
+        arqSeries.create(new Serie("Breaking Bad", LocalDate.of(2008, 1, 20),
+                "Um professor de química vira traficante de metanfetamina.", "Netflix", "Drama/Crime", "18+"));
+        arqSeries.create(new Serie("Stranger Things", LocalDate.of(2016, 7, 15),
+                "Crianças descobrem segredos sobrenaturais em sua cidade.", "Netflix", "Ficção Científica/Terror",
+                "14+"));
+        arqSeries.create(new Serie("Game of Thrones", LocalDate.of(2011, 4, 17),
+                "Famílias nobres lutam pelo controle do trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
+        arqSeries.create(new Serie("The Witcher", LocalDate.of(2019, 12, 20),
+                "Geralt de Rívia enfrenta monstros e conflitos políticos.", "Netflix", "Fantasia/Ação", "16+"));
+        arqSeries.create(new Serie("Dark", LocalDate.of(2017, 12, 1),
+                "Viagens no tempo revelam segredos sombrios de uma cidade.", "Netflix", "Ficção Científica/Suspense",
+                "16+"));
+        arqSeries.create(new Serie("The Boys", LocalDate.of(2019, 7, 26),
+                "Super-heróis corruptos são combatidos por um grupo rebelde.", "Prime Video", "Ação/Drama", "18+"));
+        arqSeries.create(new Serie("Peaky Blinders", LocalDate.of(2013, 9, 12),
+                "Gangue britânica liderada por Thomas Shelby.", "Netflix", "Crime/Drama", "16+"));
+        arqSeries.create(new Serie("The Mandalorian", LocalDate.of(2019, 11, 12),
+                "Caçador de recompensas protege uma criança misteriosa.", "Disney+", "Ficção Científica/Aventura",
+                "12+"));
+        arqSeries.create(new Serie("House of the Dragon", LocalDate.of(2022, 8, 21),
+                "A guerra civil da família Targaryen pelo trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
+        arqSeries.create(new Serie("Loki", LocalDate.of(2021, 6, 9),
+                "O deus da trapaça embarca em viagens pelo multiverso.", "Disney+", "Ação/Ficção Científica", "12+"));
 
+    }
+
+    // Metodo para carregar stopords do arquivo
+    public static List<String> carregarStopwords(String caminhoArquivo) throws IOException {
+        List<String> stopwords = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivo))) {
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                stopwords.add(linha.trim().toLowerCase());
+            }
+        }
+        return stopwords;
+    }
+
+    // Metodo para filtrar termos e frequencia
+    public static void gerarTermosComFrequencia(String[] termos, List<String> termosFiltrados,
+            List<Integer> frequencias) throws IOException {
+        // arquivo de stopwords
+        List<String> stopwords = carregarStopwords("stopwords.txt");
+        // percorre cada termo
+        for (String termo : termos) {
+            // se nao for stopword
+            if (!stopwords.contains(termo)) {
+                int index = termosFiltrados.indexOf(termo);
+                // Verifica se o termo ja esta na lista termosFiltrados
+                if (index == -1) {
+                    // se nao tiver adiciona e a frequencia
+                    termosFiltrados.add(termo);
+                    frequencias.add(1);
+                } else {
+                    // Se ja estiver, incrementa a frequencia
+                    frequencias.set(index, frequencias.get(index) + 1);
+                }
+            }
+        }
+    }
+
+    // Metodo para calcular frequencia TF
+    public static List<Float> calcularFrequencia(List<Integer> frequencias) {
+        List<Float> tf = new ArrayList<>();
+        int total = 0;
+
+        for (int freq : frequencias) {
+            total += freq;
+        }
+
+        for (int freq : frequencias) {
+            tf.add((float) freq / total);
+        }
+
+        return tf;
+    }
+    
+    //Metodo para calcular idF
+    public float calcularIDF(ElementoLista[] elementos) throws Exception {
+        //quantidade de termos
+        int total = lista.numeroEntidades();
+        if (elementos == null)
+            return 0;
+        //quantidade de elementos para um termo especifico
+        int docFreq = elementos.length;
+        return Math.log((float) total / docFreq) + 1;
     }
 }
