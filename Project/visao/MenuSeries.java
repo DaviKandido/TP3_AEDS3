@@ -82,6 +82,9 @@ public class MenuSeries {
                 case 6:
                     mostrarAtoresDaSerie();
                     break;
+                case 7:
+                    povoar();
+                    break;
                 case 0:
                     break;
                 default:
@@ -253,19 +256,105 @@ public class MenuSeries {
                         }
                     }
                 }
+            }
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < ids.size(); i++) {
+                indices.add(i);
+            }
 
-                System.out.println("Séries encontradas:");
-                for (int i = 0; i < ids.size(); i++) {
-                    Serie serie = arqSeries.read(ids.get(i));
-                    if (serie != null) {
-                        mostraSerie(serie);
-                        System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
-                    }
+            // Ordenar os índices de acordo com os tfidfs (ordem decrescente)
+            indices.sort((i1, i2) -> Float.compare(tfidfs.get(i2), tfidfs.get(i1)));
+
+            System.out.println("Séries encontradas:");
+            for (int i : indices) {
+                Serie serie = arqSeries.read(ids.get(i));
+                if (serie != null) {
+                    mostraSerie(serie);
+                    // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
                 }
             }
+
         } catch (Exception e) {
             System.out.println("Erro ao buscar série.");
         }
+    }
+
+    // metodo para escolha da serie
+    public Serie buscarIdf(String nome) throws Exception {
+        String[] termos = nome.split("\\W+");
+        List<String> termosFiltrados = new ArrayList<>();
+        List<Integer> frequencias = new ArrayList<>();
+        // filtrar termos que nao sao stopwords e frequencia absoluta
+        gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+        System.out.println();
+
+        try {
+            List<Integer> ids = new ArrayList<>();
+            List<Float> tfidfs = new ArrayList<>();
+
+            for (String s : termosFiltrados) {
+                ElementoLista[] resultados = lista.read(s);
+                if (resultados.length == 0) {
+                    System.out.println("Nenhuma série encontrada com o nome '" + nome + "'.");
+                } else {
+                    // calcular idf
+                    float idf = calcularIDF(resultados);
+
+                    for (ElementoLista el : resultados) {
+                        float tf = el.getFrequencia();
+                        float tfidf = tf * idf;
+
+                        int id = el.getId();
+                        int index = ids.indexOf(id);
+
+                        if (index != -1) {
+                            // Se ja existe, soma
+                            tfidfs.set(index, tfidfs.get(index) + tfidf);
+                        } else {
+                            // Se nao existe, adiciona
+                            ids.add(id);
+                            tfidfs.add(tfidf);
+                        }
+                    }
+                }
+            }
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < ids.size(); i++) {
+                indices.add(i);
+            }
+
+            // Ordenar os índices de acordo com os tfidfs (ordem decrescente)
+            indices.sort((i1, i2) -> Float.compare(tfidfs.get(i2), tfidfs.get(i1)));
+
+            System.out.println("Séries encontradas:");
+            List<Serie> seriesEncontradas = new ArrayList<>();
+            int contador = 0;
+            for (int i : indices) {
+                Serie serie = arqSeries.read(ids.get(i));
+                if (serie != null) {
+                    System.out.println("\t[" + contador + "]");
+                    mostraSerie(serie);
+                    seriesEncontradas.add(serie);
+                    contador++;
+                    // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
+                }
+            }
+            System.out.print("Digite o número da série a ser atualizada: ");
+            int num = console.nextInt();
+            console.nextLine();
+
+            if (num < 0 || num >= seriesEncontradas.size()) {
+                System.out.println("Número inválido.");
+                return null;
+            }
+
+            return seriesEncontradas.get(num);
+
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar série.");
+        }
+        return null;
     }
 
     // Atualizar Série pelo nome
@@ -277,83 +366,87 @@ public class MenuSeries {
         System.out.println();
 
         try {
-            Serie[] serie = arqSeries.readNome(nome);
-            if (serie != null) {
+            // serie a ser atualizada, com lista invertida
+            Serie serie = buscarIdf(nome);
 
-                for (int i = 0; i < serie.length; i++) {
-                    System.out.println("\t[" + i + "]");
-                    mostraSerie(serie[i]);
+            if (serie != null) {
+                System.out.println("Série Encontrada " + serie.getNome());
+
+                // ------------- Dados a serem atualizados ----------------//
+                System.out.print("Novo nome (ou Enter para manter): ");
+                String novoNome = console.nextLine();
+                if (!novoNome.isEmpty()) {
+                    serie.setNome(novoNome);
                 }
 
-                System.out.print("Digite o número da série a ser atualizada: ");
-                int num = console.nextInt();
-                console.nextLine();
+                System.out.print("Novo ano de lançamento (ou Enter para manter): ");
+                String ano = console.nextLine();
+                if (!ano.isEmpty()) {
+                    LocalDate anoS = LocalDate.parse(ano + "-01-01"); // Apenas o ano
+                    serie.setAnoLancamento(anoS);
+                }
 
-                // testar se o numero digitado e' valido
-                if (num >= 0 && serie[num] != null) {
+                System.out.print("Nova sinopse (ou Enter para manter): ");
+                String novaSinopse = console.nextLine();
+                if (!novaSinopse.isEmpty()) {
+                    serie.setSinopse(novaSinopse);
+                }
 
-                    // ------------- Dados a serem atualizados ----------------//
-                    System.out.print("Novo nome (ou Enter para manter): ");
-                    String novoNome = console.nextLine();
-                    if (!novoNome.isEmpty()) {
-                        serie[num].setNome(novoNome);
-                    }
+                System.out.print("Novo streaming (ou Enter para manter): ");
+                String novoStreaming = console.nextLine();
+                if (!novoStreaming.isEmpty()) {
+                    serie.setStreaming(novoStreaming);
+                }
 
-                    System.out.print("Novo ano de lançamento (ou Enter para manter): ");
-                    String ano = console.nextLine();
-                    if (!ano.isEmpty()) {
-                        LocalDate anoS = LocalDate.parse(ano + "-01-01"); // Apenas o ano
-                        serie[num].setAnoLancamento(anoS);
-                    }
+                System.out.print("Novo genero (ou Enter para manter): ");
+                String novogenero = console.nextLine();
+                if (!novogenero.isEmpty()) {
+                    serie.setGenero(novogenero);
+                }
 
-                    System.out.print("Nova sinopse (ou Enter para manter): ");
-                    String novaSinopse = console.nextLine();
-                    if (!novaSinopse.isEmpty()) {
-                        serie[num].setSinopse(novaSinopse);
-                    }
+                System.out.print("Nova classificação indicada (ou Enter para manter): ");
+                String novoclassind = console.nextLine();
+                if (!novoclassind.isEmpty()) {
+                    serie.setClassIndicativa(novoclassind);
+                }
 
-                    System.out.print("Novo streaming (ou Enter para manter): ");
-                    String novoStreaming = console.nextLine();
-                    if (!novoStreaming.isEmpty()) {
-                        serie[num].setStreaming(novoStreaming);
-                    }
+                System.out.print("\nConfirma as alterações? (S/N) ");
+                char resp = console.nextLine().charAt(0);
 
-                    System.out.print("Novo genero (ou Enter para manter): ");
-                    String novogenero = console.nextLine();
-                    if (!novoStreaming.isEmpty()) {
-                        serie[num].setGenero(novogenero);
-                    }
+                if (resp == 'S' || resp == 's') {
+                    boolean alterado = arqSeries.update(serie);
+                    if (alterado) {
+                        System.out.println("A Série foi atualizada com sucesso!");
+                        // se o nome foi alterado, atualiza a lista
+                        if (!novoNome.isEmpty() && !nome.equals(novoNome)) {
+                            // atualizar termos
+                            String[] novosTermos = novoNome.toLowerCase().split("\\W+");
+                            List<String> termosFiltrados = new ArrayList<>();
+                            List<Integer> frequencias = new ArrayList<>();
 
-                    System.out.print("Nova classificação indicada (ou Enter para manter): ");
-                    String novoclassind = console.nextLine();
-                    if (!novoclassind.isEmpty()) {
-                        serie[num].setClassIndicativa(novoclassind);
-                    }
+                            gerarTermosComFrequencia(novosTermos, termosFiltrados, frequencias);
+                            List<Float> tf = calcularFrequencia(frequencias);
 
-                    System.out.print("\nConfirma as alterações? (S/N) ");
-                    char resp = console.nextLine().charAt(0);
-
-                    if (resp == 'S' || resp == 's') {
-                        boolean alterado = arqSeries.update(serie[num]);
-                        if (alterado) {
-                            
-                            if (lista.update(nome, new ElementoLista(serie[num].getID(), frequencia)))
-                                System.out.println("Série alterada com sucesso.");
-                            else
-                            System.out.println("Termo não atualizado.");
-                        } else {
-                            System.out.println("Erro ao alterar a série.");
+                            for (int i = 0; i < termosFiltrados.size(); i++) {
+                                float freqRelativa = tf.get(i);
+                                
+                                if (lista.update(termosFiltrados.get(i),
+                                        new ElementoLista(serie.getID(), freqRelativa))) {
+                                    lista.incrementaEntidades();
+                                }
+                            }
                         }
                     } else {
-                        System.out.println("Alterações canceladas.");
+                        System.out.println("Erro ao alterar a série.");
                     }
                 } else {
-                    System.out.println("Não há serie associada a esse número.");
+                    System.out.println("Alterações canceladas.");
                 }
-            } else {
-                System.out.println("Série não encontrada.");
+            } else{
+                System.out.println("Não foi possível alterar a série");
             }
-        } catch (Exception e) {
+        }catch(Exception e)
+        {
             System.out.println("Erro ao alterar série.");
         }
     }
@@ -367,47 +460,43 @@ public class MenuSeries {
         System.out.println();
 
         try {
-            Serie[] serie = arqSeries.readNome(nome);
-            if (serie != null && serie.length > 0) {
-                for (int i = 0; i < serie.length; i++) {
-                    System.out.println("\t[" + i + "]");
-                    mostraSerie(serie[i]);
-                }
+            Serie serie = buscarIdf(nome);
 
-                System.out.print("Digite o número da série a ser excluída: ");
-                int num = console.nextInt();
-                console.nextLine();
+            if (serie != null) {
+                System.out.println("Série Encontrada " + serie.getNome());
 
                 // testar se o numero digitado e' valido
-                if (num >= 0 && serie[num] != null) {
-                    Episodio[] episodios = arqEpisodios.readEpisodiosSerie(serie[num].getID());
-                    if (episodios != null) {
-                        System.out.print("Essa série possui episódios vinculados, deseja excluir mesmo assim? (S/N) ");
-                    } else {
-                        System.out.print("Tem certeza que deseja excluir essa série? (S/N) ");
-                    }
-                    char resposta = console.nextLine().charAt(0);
-                    if (resposta != 'S' && resposta != 's') {
-                        System.out.println("A série não foi excluída.");
-                        return;
+                
+                Episodio[] episodios = arqEpisodios.readEpisodiosSerie(serie.getID());
+                if (episodios != null) {
+                    System.out.print("Essa série possui episódios vinculados, deseja excluir mesmo assim? (S/N) ");
+                } else {
+                    System.out.print("Tem certeza que deseja excluir essa série? (S/N) ");
+                }
+                char resposta = console.nextLine().charAt(0);
+                if (resposta != 'S' && resposta != 's') {
+                    System.out.println("A série não foi excluída.");
+                    return;
+                }
+
+                boolean excluido = arqSeries.delete(serie.getID());
+                if (excluido) {
+                    String[] termos = nome.toLowerCase().split("\\W+");
+                    List<String> termosFiltrados = new ArrayList<>();
+                    List<Integer> frequencias = new ArrayList<>();
+                    gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+                    for (String termo : termosFiltrados) {
+                        lista.delete(termo, serie.getID());
+                        lista.decrementaEntidades();
                     }
 
-                    boolean excluido = arqSeries.delete(serie[num].getID());
-                    if (excluido) {
-                        if (lista.delete(nome, serie[num].getID()))
-                            lista.print();
-                        else
-                            System.out.println("Termo não excluído.");
-                        System.out.println("Série excluída com sucesso.");
-                    } else {
-                        System.out.println("Erro ao excluir a série.");
-                    }
+                    System.out.println("Série excluída com sucesso.");
                 } else {
-                    System.out.println("Não há serie associada a esse número.");
+                    System.out.println("Erro ao excluir a série.");
                 }
-            } else {
-                System.out.println("Série não encontrada.");
-            }
+            } 
+            
         } catch (Exception e) {
             System.out.println("Erro ao excluir série.");
         }
@@ -580,30 +669,27 @@ public class MenuSeries {
     }
 
     public void povoar() throws Exception {
-        arqSeries.create(new Serie("Breaking Bad", LocalDate.of(2008, 1, 20),
-                "Um professor de química vira traficante de metanfetamina.", "Netflix", "Drama/Crime", "18+"));
-        arqSeries.create(new Serie("Stranger Things", LocalDate.of(2016, 7, 15),
-                "Crianças descobrem segredos sobrenaturais em sua cidade.", "Netflix", "Ficção Científica/Terror",
-                "14+"));
-        arqSeries.create(new Serie("Game of Thrones", LocalDate.of(2011, 4, 17),
-                "Famílias nobres lutam pelo controle do trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
-        arqSeries.create(new Serie("The Witcher", LocalDate.of(2019, 12, 20),
-                "Geralt de Rívia enfrenta monstros e conflitos políticos.", "Netflix", "Fantasia/Ação", "16+"));
-        arqSeries.create(new Serie("Dark", LocalDate.of(2017, 12, 1),
-                "Viagens no tempo revelam segredos sombrios de uma cidade.", "Netflix", "Ficção Científica/Suspense",
-                "16+"));
-        arqSeries.create(new Serie("The Boys", LocalDate.of(2019, 7, 26),
-                "Super-heróis corruptos são combatidos por um grupo rebelde.", "Prime Video", "Ação/Drama", "18+"));
-        arqSeries.create(new Serie("Peaky Blinders", LocalDate.of(2013, 9, 12),
-                "Gangue britânica liderada por Thomas Shelby.", "Netflix", "Crime/Drama", "16+"));
-        arqSeries.create(new Serie("The Mandalorian", LocalDate.of(2019, 11, 12),
-                "Caçador de recompensas protege uma criança misteriosa.", "Disney+", "Ficção Científica/Aventura",
-                "12+"));
-        arqSeries.create(new Serie("House of the Dragon", LocalDate.of(2022, 8, 21),
-                "A guerra civil da família Targaryen pelo trono de ferro.", "HBO Max", "Fantasia/Drama", "18+"));
-        arqSeries.create(new Serie("Loki", LocalDate.of(2021, 6, 9),
-                "O deus da trapaça embarca em viagens pelo multiverso.", "Disney+", "Ação/Ficção Científica", "12+"));
+        arqSeries.create(new Serie("De Volta aos 15", LocalDate.of(2022, 3, 15),
+                "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
+                "Netflix", "Comédia/Romance", "14+"));
 
+        arqSeries.create(new Serie("Os Quatro da Candelária", LocalDate.of(2019, 10, 10),
+                "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
+                "Globoplay", "Drama", "16+"));
+
+        arqSeries.create(new Serie("O Cangaceiro do Futuro", LocalDate.of(2023, 5, 20),
+                "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
+                "Amazon Prime", "Ação/Ficção Científica", "16+"));
+
+        arqSeries.create(new Serie("Onde Está Meu Coração", LocalDate.of(2021, 7, 8),
+                "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
+                "Globoplay", "Drama", "18+"));
+        arqSeries.create(new Serie("Manhãs de Setembro", LocalDate.of(2022, 6, 15),
+                "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
+                "Globoplay", "Drama", "14+"));
+        arqSeries.create(new Serie("Sob Pressão", LocalDate.of(2017, 7, 25),
+                "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
+                "GloboPlay", "Drama", "16+"));
     }
 
     // Metodo para carregar stopords do arquivo
@@ -656,15 +742,15 @@ public class MenuSeries {
 
         return tf;
     }
-    
-    //Metodo para calcular idF
+
+    // Metodo para calcular idF
     public float calcularIDF(ElementoLista[] elementos) throws Exception {
-        //quantidade de termos
+        // quantidade de termos
         int total = lista.numeroEntidades();
         if (elementos == null)
             return 0;
-        //quantidade de elementos para um termo especifico
+        // quantidade de elementos para um termo especifico
         int docFreq = elementos.length;
-        return Math.log((float) total / docFreq) + 1;
+        return (float) (Math.log((float) total / docFreq) + 1);
     }
 }
