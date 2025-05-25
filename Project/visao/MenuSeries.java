@@ -171,7 +171,7 @@ public class MenuSeries {
                 for (int i = 0; i < termosFiltrados.size(); i++) {
                     String termo = termosFiltrados.get(i);
                     float freqRelativa = tf.get(i);
-                    
+
                     lista.create(termo, new ElementoLista(idSerie, freqRelativa));
                 }
                 // lista.print();
@@ -375,7 +375,7 @@ public class MenuSeries {
             Serie serie = buscarIdf(nome);
 
             if (serie != null) {
-            
+
                 // ------------- Dados a serem atualizados ----------------//
                 System.out.print("Novo nome (ou Enter para manter): ");
                 String novoNome = console.nextLine();
@@ -424,11 +424,11 @@ public class MenuSeries {
                         // se o nome foi alterado, excluir os termos antigos
                         String[] termosAntigos = nome.toLowerCase().split("\\W+");
                         for (String termo : termosAntigos) {
-                            if(lista.delete(termo, serie.getID())){
+                            if (lista.delete(termo, serie.getID())) {
                                 lista.decrementaEntidades();
                             }
                         }
-             
+
                         if (!novoNome.isEmpty() && !nome.equals(novoNome)) {
                             // atualizar termos
                             String[] novosTermos = novoNome.toLowerCase().split("\\W+");
@@ -440,7 +440,7 @@ public class MenuSeries {
 
                             for (int i = 0; i < termosFiltrados.size(); i++) {
                                 float freqRelativa = tf.get(i);
-                                
+
                                 if (lista.update(termosFiltrados.get(i),
                                         new ElementoLista(serie.getID(), freqRelativa))) {
                                     lista.incrementaEntidades();
@@ -453,11 +453,10 @@ public class MenuSeries {
                 } else {
                     System.out.println("Alterações canceladas.");
                 }
-            } else{
+            } else {
                 System.out.println("Não foi possível alterar a série");
             }
-        }catch(Exception e)
-        {
+        } catch (Exception e) {
             System.out.println("Erro ao alterar série.");
         }
     }
@@ -477,7 +476,7 @@ public class MenuSeries {
                 System.out.println("Série Encontrada " + serie.getNome());
 
                 // testar se o numero digitado e' valido
-                
+
                 Episodio[] episodios = arqEpisodios.readEpisodiosSerie(serie.getID());
                 if (episodios != null) {
                     System.out.print("Essa série possui episódios vinculados, deseja excluir mesmo assim? (S/N) ");
@@ -506,8 +505,8 @@ public class MenuSeries {
                 } else {
                     System.out.println("Erro ao excluir a série.");
                 }
-            } 
-            
+            }
+
         } catch (Exception e) {
             System.out.println("Erro ao excluir série.");
         }
@@ -523,44 +522,29 @@ public class MenuSeries {
 
         do {
             try {
-                Serie[] series = arqSeries.readNome(nomeSerieVinculada);
+                Serie serie = buscarIdf(nomeSerieVinculada);
 
-                if (series != null && series.length > 0) {
+                if (serie != null) {
+                    System.out.println("Série Encontrada " + serie.getNome());
                     System.out.println("Séries encontradas:");
-                    for (int i = 0; i < series.length; i++) {
-                        System.out.print("[" + i + "] ");
-                        mostraSerie(series[i]);
-                    }
 
-                    System.out.print("\nDigite o número da série escolhida: ");
-                    if (console.hasNextInt()) {
-                        int num = console.nextInt();
-                        console.nextLine(); // Limpar buffer
+                    System.out.println("Episódios da série " + serie.getNome() + ":");
+                    Episodio[] episodios = arqEpisodios.readEpisodiosSerie(serie.getID());
 
-                        if (num < 0 || num >= series.length) {
-                            System.err.println("Número inválido!");
-                        } else {
-                            System.out.println("Episódios da série " + series[num].getNome() + ":");
-                            Episodio[] episodios = arqEpisodios.readEpisodiosSerie(series[num].getID());
-
-                            if (episodios != null && episodios.length > 0) {
-                                int temporadaAtual = -1;
-                                for (Episodio ep : episodios) {
-                                    if (ep.getTemporada() != temporadaAtual) {
-                                        temporadaAtual = ep.getTemporada();
-                                        System.out.println("\nTemporada " + temporadaAtual + ":");
-                                    }
-                                    menuEpisodio.mostraEpisodio(ep);
-                                }
-                            } else {
-                                System.out.println("Nenhum episódio encontrado para esta série.");
+                    if (episodios != null && episodios.length > 0) {
+                        int temporadaAtual = -1;
+                        for (Episodio ep : episodios) {
+                            if (ep.getTemporada() != temporadaAtual) {
+                                temporadaAtual = ep.getTemporada();
+                                System.out.println("\nTemporada " + temporadaAtual + ":");
                             }
-                            dadosCorretos = true;
+                            menuEpisodio.mostraEpisodio(ep);
                         }
                     } else {
-                        System.err.println("Entrada inválida! Digite um número válido.");
-                        console.nextLine(); // Limpar buffer
+                        System.out.println("Nenhum episódio encontrado para esta série.");
                     }
+                    dadosCorretos = true;
+
                 } else {
                     System.out.println("Nenhuma série encontrada com esse nome.");
                     dadosCorretos = true;
@@ -582,48 +566,31 @@ public class MenuSeries {
 
         do {
             try {
-                Serie[] series = arqSeries.readNome(nomeSerieVinculada);
+                Serie serie = buscarIdf(nomeSerieVinculada);
 
-                if (series != null && series.length > 0) {
-                    System.out.println("Séries encontradas:");
-                    for (int i = 0; i < series.length; i++) {
-                        System.out.print("[" + i + "] ");
-                        mostraSerie(series[i]);
-                    }
+                if (serie != null) {
+                    System.out.println("Série Encontrada " + serie.getNome());
+                    System.out.println("\nAtores da série " + serie.getNome() + ":");
+                    Ator[] atores = arqAtores.readAtoresDaSerie(serie.getID());
 
-                    System.out.print("\nDigite o número da série escolhida: ");
-                    if (console.hasNextInt()) {
-                        int num = console.nextInt();
-                        console.nextLine(); // Limpar buffer
+                    if (atores != null && atores.length > 0) {
+                        for (Ator at : atores) {
+                            System.out.println();
+                            mostraAtor(at);
 
-                        if (num < 0 || num >= series.length || series[num] == null) {
-                            System.err.println("Número inválido!");
-                        } else {
-                            System.out.println("\nAtores da série " + series[num].getNome() + ":");
-                            Ator[] atores = arqAtores.readAtoresDaSerie(series[num].getID());
-
-                            if (atores != null && atores.length > 0) {
-                                for (Ator at : atores) {
-                                    System.out.println();
-                                    mostraAtor(at);
-
-                                    Elenco[] elenco = arqElenco.read(at.getID(), series[num].getID());
-                                    if (elenco != null && elenco.length > 0) {
-                                        System.out.println("Fazendo o papel de: ");
-                                        for (Elenco el : elenco) {
-                                            mostraElenco(el);
-                                        }
-                                    }
+                            Elenco[] elenco = arqElenco.read(at.getID(), serie.getID());
+                            if (elenco != null && elenco.length > 0) {
+                                System.out.println("Fazendo o papel de: ");
+                                for (Elenco el : elenco) {
+                                    mostraElenco(el);
                                 }
-                            } else {
-                                System.out.println("Nenhum ator encontrado para esta série.");
                             }
-                            dadosCorretos = true;
                         }
                     } else {
-                        System.err.println("Entrada inválida! Digite um número válido.");
-                        console.nextLine(); // Limpar buffer
+                        System.out.println("Nenhum ator encontrado para esta série.");
                     }
+                    dadosCorretos = true;
+
                 } else {
                     System.out.println("Nenhum ator encontrada com esse nome.");
                     dadosCorretos = true;
@@ -679,9 +646,9 @@ public class MenuSeries {
         }
     }
 
-    //Incluir serie para metodo povoar
+    // Incluir serie para metodo povoar
     public void incluirSerieAutomaticamente(String nome, String genero, String classind, int anoLancamento,
-                                         String sinopse, String streaming) {
+            String sinopse, String streaming) {
         try {
             LocalDate ano = LocalDate.of(anoLancamento, 1, 1);
             Serie s = new Serie(nome, ano, sinopse, streaming, genero, classind);
@@ -695,7 +662,7 @@ public class MenuSeries {
             gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
             List<Float> tf = calcularFrequencia(frequencias);
 
-            lista.incrementaEntidades(); 
+            lista.incrementaEntidades();
             for (int i = 0; i < termosFiltrados.size(); i++) {
                 String termo = termosFiltrados.get(i);
                 float freqRelativa = tf.get(i);
@@ -710,49 +677,48 @@ public class MenuSeries {
         }
     }
 
-    public void povoar() throws Exception {     
+    public void povoar() throws Exception {
         incluirSerieAutomaticamente(
-            "De Volta aos 15",
-            "Comédia/Romance", "14+",
-            2022,
-            "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
-            "Netflix");
+                "De Volta aos 15",
+                "Comédia/Romance", "14+",
+                2022,
+                "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
+                "Netflix");
 
         incluirSerieAutomaticamente(
-            "Os Quatro da Candelária",
-            "Drama", "16+",
-            2019,
-            "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
-            "Globoplay");
-
-
-        incluirSerieAutomaticamente(
-            "O Cangaceiro do Futuro", 
-            "Ação/Ficção Científica", "16+",
-            2023,
-            "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
-            "Amazon Prime");
+                "Os Quatro da Candelária",
+                "Drama", "16+",
+                2019,
+                "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
+                "Globoplay");
 
         incluirSerieAutomaticamente(
-            "Onde Está Meu Coração", 
-            "Drama", "18+",
-            2021,
-            "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
-            "Globoplay");
+                "O Cangaceiro do Futuro",
+                "Ação/Ficção Científica", "16+",
+                2023,
+                "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
+                "Amazon Prime");
 
         incluirSerieAutomaticamente(
-            "Manhãs de Setembro", 
-            "Drama", "14+",
-            2022,
-            "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
-            "Globoplay");
-        
+                "Onde Está Meu Coração",
+                "Drama", "18+",
+                2021,
+                "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
+                "Globoplay");
+
         incluirSerieAutomaticamente(
-            "Sob Pressão", 
-            "Drama", "16+",
-            2017,
-            "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
-            "GloboPlay");
+                "Manhãs de Setembro",
+                "Drama", "14+",
+                2022,
+                "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
+                "Globoplay");
+
+        incluirSerieAutomaticamente(
+                "Sob Pressão",
+                "Drama", "16+",
+                2017,
+                "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
+                "GloboPlay");
     }
 
     // Metodo para carregar stopords do arquivo
