@@ -54,6 +54,8 @@ public class MenuSeries {
             System.out.println("4) Excluir");
             System.out.println("5) Mostrar todos os episódios de uma série");
             System.out.println("6) Mostrar todos os atores de uma série");
+            System.out.println("7) Povoar");
+
             System.out.println("0) Retornar ao menu anterior");
 
             System.out.print("\nOpção: ");
@@ -169,11 +171,11 @@ public class MenuSeries {
                 for (int i = 0; i < termosFiltrados.size(); i++) {
                     String termo = termosFiltrados.get(i);
                     float freqRelativa = tf.get(i);
-                    lista.incrementaEntidades();
+                    
                     lista.create(termo, new ElementoLista(idSerie, freqRelativa));
                 }
                 // lista.print();
-
+                lista.incrementaEntidades();
                 System.out.println("Série incluída com sucesso.");
 
                 boolean dadosCorretos = false;
@@ -197,12 +199,15 @@ public class MenuSeries {
                             System.out.println("\tAtor " + i);
                             try {
                                 menuAtores.incluirAtores(idSerie);
-                                dadosCorretos = true;
                             } catch (Exception e) {
                                 System.out.println("Erro ao incluir atores: " + e.getMessage());
                             }
                         }
-
+                        dadosCorretos = true;
+                    } else if (resposta == 'N' || resposta == 'n') {
+                        dadosCorretos = true;
+                    } else {
+                        System.out.println("Resposta inválida. Digite S ou N.");
                     }
                 } while (dadosCorretos == false);
             } catch (Exception e) {
@@ -370,8 +375,7 @@ public class MenuSeries {
             Serie serie = buscarIdf(nome);
 
             if (serie != null) {
-                System.out.println("Série Encontrada " + serie.getNome());
-
+            
                 // ------------- Dados a serem atualizados ----------------//
                 System.out.print("Novo nome (ou Enter para manter): ");
                 String novoNome = console.nextLine();
@@ -417,7 +421,14 @@ public class MenuSeries {
                     boolean alterado = arqSeries.update(serie);
                     if (alterado) {
                         System.out.println("A Série foi atualizada com sucesso!");
-                        // se o nome foi alterado, atualiza a lista
+                        // se o nome foi alterado, excluir os termos antigos
+                        String[] termosAntigos = nome.toLowerCase().split("\\W+");
+                        for (String termo : termosAntigos) {
+                            if(lista.delete(termo, serie.getID())){
+                                lista.decrementaEntidades();
+                            }
+                        }
+             
                         if (!novoNome.isEmpty() && !nome.equals(novoNome)) {
                             // atualizar termos
                             String[] novosTermos = novoNome.toLowerCase().split("\\W+");
@@ -668,28 +679,80 @@ public class MenuSeries {
         }
     }
 
-    public void povoar() throws Exception {
-        arqSeries.create(new Serie("De Volta aos 15", LocalDate.of(2022, 3, 15),
-                "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
-                "Netflix", "Comédia/Romance", "14+"));
+    //Incluir serie para metodo povoar
+    public void incluirSerieAutomaticamente(String nome, String genero, String classind, int anoLancamento,
+                                         String sinopse, String streaming) {
+        try {
+            LocalDate ano = LocalDate.of(anoLancamento, 1, 1);
+            Serie s = new Serie(nome, ano, sinopse, streaming, genero, classind);
+            int idSerie = arqSeries.create(s);
 
-        arqSeries.create(new Serie("Os Quatro da Candelária", LocalDate.of(2019, 10, 10),
-                "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
-                "Globoplay", "Drama", "16+"));
+            // Separar termos
+            String[] termos = nome.toLowerCase().split("\\W+");
+            List<String> termosFiltrados = new ArrayList<>();
+            List<Integer> frequencias = new ArrayList<>();
 
-        arqSeries.create(new Serie("O Cangaceiro do Futuro", LocalDate.of(2023, 5, 20),
-                "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
-                "Amazon Prime", "Ação/Ficção Científica", "16+"));
+            gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+            List<Float> tf = calcularFrequencia(frequencias);
 
-        arqSeries.create(new Serie("Onde Está Meu Coração", LocalDate.of(2021, 7, 8),
-                "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
-                "Globoplay", "Drama", "18+"));
-        arqSeries.create(new Serie("Manhãs de Setembro", LocalDate.of(2022, 6, 15),
-                "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
-                "Globoplay", "Drama", "14+"));
-        arqSeries.create(new Serie("Sob Pressão", LocalDate.of(2017, 7, 25),
-                "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
-                "GloboPlay", "Drama", "16+"));
+            lista.incrementaEntidades(); 
+            for (int i = 0; i < termosFiltrados.size(); i++) {
+                String termo = termosFiltrados.get(i);
+                float freqRelativa = tf.get(i);
+                lista.create(termo, new ElementoLista(idSerie, freqRelativa));
+            }
+
+            System.out.println("Série \"" + nome + "\" incluída automaticamente com sucesso.");
+
+        } catch (Exception e) {
+            System.out.println("Erro ao incluir série automaticamente.");
+            e.printStackTrace();
+        }
+    }
+
+    public void povoar() throws Exception {     
+        incluirSerieAutomaticamente(
+            "De Volta aos 15",
+            "Comédia/Romance", "14+",
+            2022,
+            "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
+            "Netflix");
+
+        incluirSerieAutomaticamente(
+            "Os Quatro da Candelária",
+            "Drama", "16+",
+            2019,
+            "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
+            "Globoplay");
+
+
+        incluirSerieAutomaticamente(
+            "O Cangaceiro do Futuro", 
+            "Ação/Ficção Científica", "16+",
+            2023,
+            "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
+            "Amazon Prime");
+
+        incluirSerieAutomaticamente(
+            "Onde Está Meu Coração", 
+            "Drama", "18+",
+            2021,
+            "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
+            "Globoplay");
+
+        incluirSerieAutomaticamente(
+            "Manhãs de Setembro", 
+            "Drama", "14+",
+            2022,
+            "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
+            "Globoplay");
+        
+        incluirSerieAutomaticamente(
+            "Sob Pressão", 
+            "Drama", "16+",
+            2017,
+            "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
+            "GloboPlay");
     }
 
     // Metodo para carregar stopords do arquivo
