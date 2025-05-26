@@ -1,5 +1,6 @@
 package visao;
 
+import aeds3.ListaInvertida;
 import entidades.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,6 +9,7 @@ import modelo.*;
 
 public class MenuEpisodios {
     
+
     ArquivoEpisodios arqEpisodios;
     ArquivoSeries arqSeries;
     private static Scanner console = new Scanner(System.in);
@@ -563,4 +565,6 @@ public class MenuEpisodios {
         // Serie de id 10
         arqEpisodios.create(new Episodio( "Volto Já", 1, LocalDate.of(2011, 12, 4), 44, 8.6f, false, "Uma mulher tenta reviver seu namorado morto usando IA.", 10));
     }
+
+
 }
