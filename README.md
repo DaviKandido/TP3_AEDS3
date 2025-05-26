@@ -23,7 +23,7 @@ Este projeto é uma aplicação desenvolvida em Java chamada PUCFlix 2.0, que si
    	└── Arquivo.java //(Métodos: read, create, delete, update, addDeleted, getDeleted)
    	└── ArvoreBMais.java //(Métodos: empty, read, create, delete, update, print)
         └── ListaInvertida.java //(Métodos: create, read, delete, numeroEntidades, incrementaEntidades, decrementaEntidades)
-        └── Bloco (classe interna) //(Métodos: toByteArray, fromByteArray, create, test, read, update, delete, last, list, empty, full, toString, next, setNext, size)
+        └── ElementoLista //(Métodos: toByteArray, fromByteArray, create, test, read, update, delete, last, list, empty, full, toString, next, setNext, size)
    	└── Pagina.java //(Métodos: toByteArray, fromByteArray)
    	└── EntidadeArquivo.java //(Interface: setID, getID, toByteArray, fromByteArray)
    	└── HashExtensivel.java //(Métodos: toByteArray, fromByteArray, create, read, update, delete, empty, full, print, atualizaEndereco)
