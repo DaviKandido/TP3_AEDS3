@@ -718,6 +718,35 @@ public class MenuSeries {
                 2017,
                 "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
                 "GloboPlay");
+                
+        incluirSerieAutomaticamente(
+        "Irmandade",
+        "Crime/Drama", "16+",
+        2019,
+        "Uma advogada descobre que seu irmão está preso e lidera uma facção criminosa, colocando sua moral à prova.",
+        "Netflix");
+
+        incluirSerieAutomaticamente(
+            "Coisa Mais Linda",
+            "Drama/Romance", "14+",
+            2019,
+            "Nos anos 1950, uma mulher decide abrir um clube de bossa nova no Rio de Janeiro após ser abandonada pelo marido.",
+            "Netflix");
+
+        incluirSerieAutomaticamente(
+            "Arcanjo Renegado",
+            "Ação/Policial", "18+",
+            2020,
+            "Um sargento do BOPE se envolve em uma trama política e policial enquanto enfrenta o crime organizado.",
+            "Globoplay");
+
+        incluirSerieAutomaticamente(
+            "3%",
+            "Ficção Científica/Drama", "16+",
+            2016,
+            "Em um futuro distópico, jovens têm uma única chance de passar por um processo seletivo que garante acesso a uma vida melhor.",
+            "Netflix");
+
     }
 
     // Metodo para carregar stopords do arquivo
