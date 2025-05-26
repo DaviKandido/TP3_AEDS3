@@ -54,7 +54,6 @@ public class MenuSeries {
             System.out.println("4) Excluir");
             System.out.println("5) Mostrar todos os episódios de uma série");
             System.out.println("6) Mostrar todos os atores de uma série");
-            System.out.println("7) Povoar");
 
             System.out.println("0) Retornar ao menu anterior");
 
@@ -83,9 +82,6 @@ public class MenuSeries {
                     break;
                 case 6:
                     mostrarAtoresDaSerie();
-                    break;
-                case 7:
-                    povoar();
                     break;
                 case 0:
                     break;
