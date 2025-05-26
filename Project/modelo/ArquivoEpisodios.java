@@ -376,7 +376,7 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
   public static void gerarTermosComFrequencia(String[] termos, List<String> termosFiltrados,
           List<Integer> frequencias) throws IOException {
       // arquivo de stopwords
-      List<String> stopwords = carregarStopwords("./stopwords.txt");
+      List<String> stopwords = carregarStopwords("stopwords.txt");
       // percorre cada termo
       for (String termo : termos) {
           // se nao for stopword

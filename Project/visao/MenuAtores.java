@@ -32,7 +32,7 @@ public class MenuAtores {
           File d = new File("dados");
         if (!d.exists())
             d.mkdir();
-        lista = new ListaInvertida(100, "dados/dicionario_ator.listainv.db", "dados/blocos_ator.listainv.db");
+        lista = new ListaInvertida(100, "dados/ator/dicionario_ator.listainv.db", "dados/ator/blocos_ator.listainv.db");
     }
 
   public void menu() throws Exception {

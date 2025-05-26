@@ -23,6 +23,7 @@ public class ArquivoSeries extends Arquivo<Serie> {
                 ParTituloId.class.getConstructor(),
                 5,
                 "./dados/" + nomeEntidade + "/indiceNomeSerie.d.db");
+                
         lista = new ListaInvertida(100, "dados/series/dicionario_serie.listainv.db", "dados/series/blocos_serie.listainv.db");
 
     }
