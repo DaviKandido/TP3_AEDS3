@@ -57,7 +57,7 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
 
   public Episodio[] readNomeEpisodio(String nome) throws Exception{
 
-        String[] termos = nome.split("\\W+");
+        String[] termos = nome.toLowerCase().split("\\W+");
         List<String> termosFiltrados = new ArrayList<>();
         List<Integer> frequencias = new ArrayList<>();
 
@@ -118,7 +118,7 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
 
   public Episodio[] readNomeEpisodioPorSerie(String nome, int id_serie) throws Exception{
 
-        String[] termos = nome.split("\\W+");
+        String[] termos = nome.toLowerCase().split("\\W+");
         List<String> termosFiltrados = new ArrayList<>();
         List<Integer> frequencias = new ArrayList<>();
 
@@ -165,7 +165,7 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
         ArrayList<Episodio> episodios = new ArrayList<>();
         for (int i : indices) {
             Episodio ep = super.read(ids.get(i));
-            if (ep != null) {
+            if (ep != null && ep.getID_serie() == id_serie) {
                 episodios.add(ep);
                 // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
             }
