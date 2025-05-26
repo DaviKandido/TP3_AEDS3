@@ -56,43 +56,125 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
   }
 
   public Episodio[] readNomeEpisodio(String nome) throws Exception{
-    if(nome.length() == 0)
-      return null;
 
-    ArrayList<ParTituloId> ptis = indiceNomeEpisodio.read(new ParTituloId(nome, -1));
-    if(ptis.size() > 0){
-      Episodio[] episodios = new Episodio[ptis.size()];
-      int i = 0;
-      for(ParTituloId pti: ptis)
-        episodios[i++] = read(pti.getId());
-      return episodios;
+        String[] termos = nome.split("\\W+");
+        List<String> termosFiltrados = new ArrayList<>();
+        List<Integer> frequencias = new ArrayList<>();
 
-    }else
-      return null;
+        gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+        List<Integer> ids = new ArrayList<>();
+        List<Float> tfidfs = new ArrayList<>();
+
+        for (String s : termosFiltrados) {
+            ElementoLista[] resultados = lista.read(s);
+            if (resultados.length == 0) {
+                System.out.println("Nenhuma série encontrada com o nome '" + nome + "'.");
+            } else {
+                // calcular idf
+                float idf = calcularIDF(resultados);
+
+                for (ElementoLista el : resultados) {
+                    float tf = el.getFrequencia();
+                    float tfidf = tf * idf;
+
+                    int id = el.getId();
+                    int index = ids.indexOf(id);
+
+                    if (index != -1) {
+                        // Se ja existe, soma
+                        tfidfs.set(index, tfidfs.get(index) + tfidf);
+                    } else {
+                        // Se nao existe, adiciona
+                        ids.add(id);
+                        tfidfs.add(tfidf);
+                    }
+                }
+            }
+        }
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            indices.add(i);
+        }
+
+        // Ordenar os índices de acordo com os tfidfs (ordem decrescente)
+        indices.sort((i1, i2) -> Float.compare(tfidfs.get(i2), tfidfs.get(i1)));
+
+
+        ArrayList<Episodio> episodios = new ArrayList<>();
+        for (int i : indices) {
+            Episodio ep = super.read(ids.get(i));
+            if (ep != null) {
+                episodios.add(ep);
+                // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
+            }
+        }
+
+        if (episodios.size() > 0)
+            return episodios.toArray(new Episodio[episodios.size()]);
+        else
+          return null;
   }
 
   public Episodio[] readNomeEpisodioPorSerie(String nome, int id_serie) throws Exception{
-    if(nome.length() == 0)
-      return null;
 
-    ArrayList<ParTituloId> ptis = indiceNomeEpisodio.read(new ParTituloId(nome, -1));
-    if(ptis.size() > 0){
-      Episodio[] episodios = new Episodio[ptis.size()];
-      int i = 0;
-      for(ParTituloId pti: ptis)
-        episodios[i++] = read(pti.getId());
+        String[] termos = nome.split("\\W+");
+        List<String> termosFiltrados = new ArrayList<>();
+        List<Integer> frequencias = new ArrayList<>();
 
-      ArrayList<Episodio> episodiosSerie = new ArrayList<>();
+        gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
 
-      // Verifica se o episodio pertence a serie
-      for(Episodio e : episodios){
-        if(e.getID_serie() == id_serie)
-          episodiosSerie.add(e);
-      }
+        List<Integer> ids = new ArrayList<>();
+        List<Float> tfidfs = new ArrayList<>();
 
-      return episodiosSerie.toArray(new Episodio[episodiosSerie.size()]);
-    }else
-      return null;
+        for (String s : termosFiltrados) {
+            ElementoLista[] resultados = lista.read(s);
+            if (resultados.length == 0) {
+                System.out.println("Nenhuma série encontrada com o nome '" + nome + "'.");
+            } else {
+                // calcular idf
+                float idf = calcularIDF(resultados);
+
+                for (ElementoLista el : resultados) {
+                    float tf = el.getFrequencia();
+                    float tfidf = tf * idf;
+
+                    int id = el.getId();
+                    int index = ids.indexOf(id);
+
+                    if (index != -1) {
+                        // Se ja existe, soma
+                        tfidfs.set(index, tfidfs.get(index) + tfidf);
+                    } else {
+                        // Se nao existe, adiciona
+                        ids.add(id);
+                        tfidfs.add(tfidf);
+                    }
+                }
+            }
+        }
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            indices.add(i);
+        }
+
+        // Ordenar os índices de acordo com os tfidfs (ordem decrescente)
+        indices.sort((i1, i2) -> Float.compare(tfidfs.get(i2), tfidfs.get(i1)));
+
+
+        ArrayList<Episodio> episodios = new ArrayList<>();
+        for (int i : indices) {
+            Episodio ep = super.read(ids.get(i));
+            if (ep != null) {
+                episodios.add(ep);
+                // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
+            }
+        }
+
+        if (episodios.size() > 0)
+            return episodios.toArray(new Episodio[episodios.size()]);
+        else
+          return null;
   }
   
   public Episodio[] readEpisodiosSerie(int id_serie) throws Exception{
@@ -113,11 +195,26 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
       return null;
   }
 
-  @Override
-  public boolean delete(int id) throws Exception{
+  public boolean delete(String nome, int id) throws Exception{
     Episodio e = read(id);
     if(e != null){
       if(super.delete(id))
+
+        try {
+            String[] termos = nome.toLowerCase().split("\\W+");
+            List<String> termosFiltrados = new ArrayList<>();
+            List<Integer> frequencias = new ArrayList<>();
+            gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+            for (String termo : termosFiltrados) {
+                lista.delete(termo,id);
+          }
+          lista.decrementaEntidades();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         return indiceIdEpisodio_IdSerie.delete(new ParIdId(e.getID_serie(), id)) 
             && indiceNomeEpisodio.delete(new ParTituloId(e.getNome(), id));
     }
@@ -132,8 +229,30 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
     System.out.println("Quantidade de episódios da serie deletados: " + pIds.size());
 
     if(pIds.size() > 0){
-      for(ParIdId pID : pIds)
-        delete(pID.getId_agregado());
+      for(ParIdId pID : pIds){
+
+          try {
+
+            Episodio ep = read(pID.getId_agregado());
+            String nome = ep.getNome();
+            String[] termos = nome.toLowerCase().split("\\W+");
+            List<String> termosFiltrados = new ArrayList<>();
+            List<Integer> frequencias = new ArrayList<>();
+            gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+            for (String termo : termosFiltrados) {
+                lista.delete(termo,pID.getId_agregado());
+            }
+            lista.decrementaEntidades();
+
+          } catch (Exception ex) {
+              ex.printStackTrace();
+          }
+
+
+          delete(pID.getId_agregado());
+
+      }
       return true;
     } 
     return false;
@@ -143,6 +262,27 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
   public boolean update(Episodio novoEpisodio) throws Exception{
     Episodio e = read(novoEpisodio.getID());
     if(e != null){
+
+      try {
+
+          Episodio ep = read(novoEpisodio.getID());
+          String nome = ep.getNome();
+          String[] termos = nome.toLowerCase().split("\\W+");
+          List<String> termosFiltrados = new ArrayList<>();
+          List<Integer> frequencias = new ArrayList<>();
+          gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
+
+          for (String termo : termosFiltrados) {
+              lista.delete(termo, novoEpisodio.getID());
+          }
+          lista.decrementaEntidades();
+
+      } catch (Exception ex) {
+          ex.printStackTrace();
+      }
+
+      incluirEpisodioAutomaticamente(novoEpisodio);
+      
       if(super.update(novoEpisodio)){
         if(!e.getNome().equals(novoEpisodio.getNome())){
           indiceNomeEpisodio.delete(new ParTituloId(e.getNome(), e.getID()));
@@ -185,7 +325,6 @@ public class ArquivoEpisodios extends Arquivo<Episodio> {
 
 
 /*----------------------------------------------Lista Invertida logica ---------------------------------------------------------------*/
-
 
 
   // Incluir serie para metodo povoar

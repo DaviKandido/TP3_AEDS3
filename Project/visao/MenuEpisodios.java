@@ -1,6 +1,5 @@
 package visao;
 
-import aeds3.ListaInvertida;
 import entidades.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -298,7 +297,7 @@ public class MenuEpisodios {
                             char resp = console.next().charAt(0);
                             console.nextLine(); // Limpar buffer
                             if (resp == 'S' || resp == 's') {
-                                boolean excluido = arqEpisodios.delete(episodio[num2].getID());
+                                boolean excluido = arqEpisodios.delete(episodio[num2].getNome(), episodio[num2].getID());
                                 if (excluido) {
                                     System.out.println("Episódio excluído com sucesso.");
                                 } else {
