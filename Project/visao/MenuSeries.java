@@ -1,11 +1,12 @@
 
 package visao;
 
+import aeds3.ElementoLista;
+import aeds3.ListaInvertida;
 import entidades.Ator;
 import entidades.Elenco;
 import entidades.Episodio;
 import entidades.Serie;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -15,9 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-import aeds3.ElementoLista;
-import aeds3.ListaInvertida;
 import modelo.ArquivoAtor;
 import modelo.ArquivoElenco;
 import modelo.ArquivoEpisodios;
@@ -39,7 +37,7 @@ public class MenuSeries {
         File d = new File("dados");
         if (!d.exists())
             d.mkdir();
-        lista = new ListaInvertida(100, "dados/dicionario_serie.listainv.db", "dados/blocos_serie.listainv.db");
+        lista = new ListaInvertida(100, "dados/series/dicionario_serie.listainv.db", "dados/series/blocos_serie.listainv.db");
     }
 
     public void menu() throws Exception {

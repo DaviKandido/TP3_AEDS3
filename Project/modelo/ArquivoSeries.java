@@ -3,13 +3,18 @@ package modelo;
 import aeds3.*;
 import entidades.Episodio;
 import entidades.Serie;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ArquivoSeries extends Arquivo<Serie> {
 
     Arquivo<Serie> arqSeries;
     ArvoreBMais<ParTituloId> indiceNomeSerie;
     ArvoreBMais<ParIdId> indices;
+    ListaInvertida lista;
 
     public ArquivoSeries() throws Exception {
         super("series", Serie.class.getConstructor());
@@ -18,6 +23,8 @@ public class ArquivoSeries extends Arquivo<Serie> {
                 ParTituloId.class.getConstructor(),
                 5,
                 "./dados/" + nomeEntidade + "/indiceNomeSerie.d.db");
+        lista = new ListaInvertida(100, "dados/series/dicionario_serie.listainv.db", "dados/series/blocos_serie.listainv.db");
+
     }
 
     @Override
@@ -28,19 +35,63 @@ public class ArquivoSeries extends Arquivo<Serie> {
     }
 
     public Serie[] readNome(String nome) throws Exception {
-        if (nome.length() == 0)
-            return null;
+        String[] termos = nome.toLowerCase().split("\\W+");
+        List<String> termosFiltrados = new ArrayList<>();
+        List<Integer> frequencias = new ArrayList<>();
 
-        ArrayList<ParTituloId> ptis = indiceNomeSerie.read(new ParTituloId(nome, -1));
-        if (ptis.size() > 0) {
-            Serie[] series = new Serie[ptis.size()];
-            int i = 0;
+        gerarTermosComFrequencia(termos, termosFiltrados, frequencias);
 
-            for (ParTituloId pti : ptis)
-                series[i++] = read(pti.getId());
-            return series;
-        } else
-            return null;
+        List<Integer> ids = new ArrayList<>();
+        List<Float> tfidfs = new ArrayList<>();
+
+        for (String s : termosFiltrados) {
+            ElementoLista[] resultados = lista.read(s);
+            if (resultados.length == 0) {
+                System.out.println("Nenhuma série encontrada com o nome '" + nome + "'.");
+            } else {
+                // calcular idf
+                float idf = calcularIDF(resultados);
+
+                for (ElementoLista el : resultados) {
+                    float tf = el.getFrequencia();
+                    float tfidf = tf * idf;
+
+                    int id = el.getId();
+                    int index = ids.indexOf(id);
+
+                    if (index != -1) {
+                        // Se ja existe, soma
+                        tfidfs.set(index, tfidfs.get(index) + tfidf);
+                    } else {
+                        // Se nao existe, adiciona
+                        ids.add(id);
+                        tfidfs.add(tfidf);
+                    }
+                }
+            }
+        }
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            indices.add(i);
+        }
+
+        // Ordenar os índices de acordo com os tfidfs (ordem decrescente)
+        indices.sort((i1, i2) -> Float.compare(tfidfs.get(i2), tfidfs.get(i1)));
+
+
+        ArrayList<Serie> series = new ArrayList<>();
+        for (int i : indices) {
+            Serie se = super.read(ids.get(i));
+            if (se != null) {
+                series.add(se);
+                // System.out.printf("TF-IDF Total: %.3f\n\n", tfidfs.get(i));
+            }
+        }
+
+        if (series.size() > 0)
+            return series.toArray(new Serie[series.size()]);
+        else
+          return null;
     }
 
     @Override
@@ -101,5 +152,73 @@ public class ArquivoSeries extends Arquivo<Serie> {
         Serie s = arqSeries.read(id); // na superclasse
         
         return s != null;
+    }
+
+
+
+
+    //---------------------------------------------------------- Metodos lista invertida ----------------------------------------------------- //
+
+
+      // Metodo para carregar stopords do arquivo
+    public static List<String> carregarStopwords(String caminhoArquivo) throws IOException {
+        List<String> stopwords = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivo))) {
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                stopwords.add(linha.trim().toLowerCase());
+            }
+        }
+        return stopwords;
+    }
+
+    // Metodo para filtrar termos e frequencia
+    public static void gerarTermosComFrequencia(String[] termos, List<String> termosFiltrados,
+            List<Integer> frequencias) throws IOException {
+        // arquivo de stopwords
+        List<String> stopwords = carregarStopwords("stopwords.txt");
+        // percorre cada termo
+        for (String termo : termos) {
+            // se nao for stopword
+            if (!stopwords.contains(termo)) {
+                int index = termosFiltrados.indexOf(termo);
+                // Verifica se o termo ja esta na lista termosFiltrados
+                if (index == -1) {
+                    // se nao tiver adiciona e a frequencia
+                    termosFiltrados.add(termo);
+                    frequencias.add(1);
+                } else {
+                    // Se ja estiver, incrementa a frequencia
+                    frequencias.set(index, frequencias.get(index) + 1);
+                }
+            }
+        }
+    }
+
+    // Metodo para calcular frequencia TF
+    public static List<Float> calcularFrequencia(List<Integer> frequencias) {
+        List<Float> tf = new ArrayList<>();
+        int total = 0;
+
+        for (int freq : frequencias) {
+            total += freq;
+        }
+
+        for (int freq : frequencias) {
+            tf.add((float) freq / total);
+        }
+
+        return tf;
+    }
+
+    // Metodo para calcular idF
+    public float calcularIDF(ElementoLista[] elementos) throws Exception {
+        // quantidade de termos
+        int total = lista.numeroEntidades();
+        if (elementos == null)
+            return 0;
+        // quantidade de elementos para um termo especifico
+        int docFreq = elementos.length;
+        return (float) (Math.log((float) total / docFreq) + 1);
     }
 }
