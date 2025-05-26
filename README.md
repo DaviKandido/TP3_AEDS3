@@ -22,6 +22,8 @@ Este projeto é uma aplicação desenvolvida em Java chamada PUCFlix 2.0, que si
    └── 📁aeds3
    	└── Arquivo.java //(Métodos: read, create, delete, update, addDeleted, getDeleted)
    	└── ArvoreBMais.java //(Métodos: empty, read, create, delete, update, print)
+        └── ListaInvertida.java //(Métodos: create, read, delete, numeroEntidades, incrementaEntidades, decrementaEntidades)
+        └── Bloco (classe interna) //(Métodos: toByteArray, fromByteArray, create, test, read, update, delete, last, list, empty, full, toString, next, setNext, size)
    	└── Pagina.java //(Métodos: toByteArray, fromByteArray)
    	└── EntidadeArquivo.java //(Interface: setID, getID, toByteArray, fromByteArray)
    	└── HashExtensivel.java //(Métodos: toByteArray, fromByteArray, create, read, update, delete, empty, full, print, atualizaEndereco)
@@ -35,6 +37,12 @@ Este projeto é uma aplicação desenvolvida em Java chamada PUCFlix 2.0, que si
             └── indiceAtor.db
             └── indiceDireito.c.db
             └── indiceDireito.d.db
+            └── blocos_ator.listainv.db
+            └── blocos_serie.listainv.db
+	    └── dicionario_ator.listainv.db
+	    └── dicionario_serie.listainv.db
+	    └── blocos_episodio.listainv.db
+	    └── dicionario_episodio.listainv.db
    	└── 📁episodio
        	   └── episodio.db
        	   └── indiceDireito.c.db
@@ -62,6 +70,7 @@ Este projeto é uma aplicação desenvolvida em Java chamada PUCFlix 2.0, que si
         └── MenuAtores.java //(Métodos: MenuAtores, menu, incluirAtores, buscarAtor, excluirAtor, mostrarAtoresDaSerie, mostraAtor, mostraElenco, mostraSerie, povoar)
         └── MenuSeries.java //(Métodos: menu, incluirSerie, buscarSerie, alterarSerie, excluirSerie, mostrarEpSerie, mostraSerie, povoar)
    └── Principal.java //(Método: main)
+   └── stopwords.txt
 ```
 
 
@@ -72,12 +81,10 @@ Todos os requisitos foram implementados ?
  - Sim
 
 Houve alguma operação mais difícil? 
- - Sim, o gerenciamento dos índices do relacionamento N:N, já que optamos por ter relacionamentos que comportem atributos,
-   como o papel e tempo de tela do ator na serie o qual esta alocada
+ - Sim, o cálculo da lista invertida 
 
 Vocês enfrentaram algum desafio na implementação? 
- - Sim, como não poder testar até que tudo estivesse pronto, já que o gerenciamento do relacionamento N:N exigia que as duas
-   entidades participantes tivessem sua relação já bem estruturadas, no entanto, no final conseguimos cumprir com o objetivo
+ - Sim, a utilização da lista invertida em si foi um grande desafio. Como por exemplo, adaptar totalmente o que haviamos feito para a lista invertida. 
 
 Os resultados foram alcançados? 
  - Sim
@@ -87,26 +94,22 @@ Os resultados foram alcançados?
 ### Checklist :
 
 ```
-    As operações de inclusão, busca, alteração e exclusão de atores estão implementadas e funcionando corretamente?
-    - Sim
-    O relacionamento entre séries e atores foi implementado com árvores B+ e funciona corretamente, assegurando a consistência entre as duas entidades?
-    - Sim
-    É possível consultar quais são os atores de uma série?
-    - Sim
-    É posssível consultar quais são as séries de um ator?
-    - Sim
-    A remoção de séries remove os seus vínculos de atores?
-    - Sim
-    A inclusão de um ator em uma série em um episódio se limita aos atores existentes?
-    - Sim
-    A remoção de um ator checa se há alguma série vinculado a ele?
-    - Sim
-    O trabalho está funcionando corretamente?
-    - Sim
-    O trabalho está completo?
-    - Sim
-    O trabalho é original e não a cópia de um trabalho de outro grupo?
-    - Sim
+O índice invertido com os termos dos títulos das séries foi criado usando a classe ListaInvertida?
+sim
+O índice invertido com os termos dos títulos dos episódios foi criado usando a classe ListaInvertida?
+sim
+O índice invertido com os termos dos nomes dos atores foi criado usando a classe ListaInvertida?
+sim
+É possível buscar séries por palavras usando o índice invertido?
+sim
+É possível buscar episódios por palavras usando o índice invertido?
+sim
+É possível buscar atores por palavras usando o índice invertido?
+sim
+O trabalho está completo?
+sim
+O trabalho é original e não a cópia de um trabalho de um colega
+sim
 
 
 ```
