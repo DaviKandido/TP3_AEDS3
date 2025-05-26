@@ -498,9 +498,8 @@ public class MenuSeries {
 
                     for (String termo : termosFiltrados) {
                         lista.delete(termo, serie.getID());
-                        lista.decrementaEntidades();
                     }
-
+                    lista.decrementaEntidades();
                     System.out.println("Série excluída com sucesso.");
                 } else {
                     System.out.println("Erro ao excluir a série.");
