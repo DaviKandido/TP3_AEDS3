@@ -672,53 +672,53 @@ public class MenuSeries {
 
     public void povoar() throws Exception {
         incluirSerieAutomaticamente(
-                "De Volta aos 15",
-                "Comédia/Romance", "14+",
-                2022,
-                "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
-                "Netflix");
+            "De Volta aos 15",
+            "Comédia/Romance", "14+",
+            2022,
+            "Após um acidente, uma mulher retorna à sua adolescência e precisa lidar com o passado.",
+            "Netflix");
 
         incluirSerieAutomaticamente(
-                "Os Quatro da Candelária",
-                "Drama", "16+",
-                2019,
-                "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
-                "Globoplay");
+            "Os Quatro da Candelária",
+            "Drama", "16+",
+            2019,
+            "Quatro amigos enfrentam os desafios da infância nas ruas da Candelária, no Rio de Janeiro.",
+            "Globoplay");
 
         incluirSerieAutomaticamente(
-                "O Cangaceiro do Futuro",
-                "Ação/Ficção Científica", "16+",
-                2023,
-                "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
-                "Amazon Prime");
+            "O Cangaceiro do Futuro",
+            "Ação/Ficção Científica", "16+",
+            2023,
+            "Um homem do sertão é transportado para o futuro e precisa se adaptar a uma nova realidade.",
+            "Amazon Prime");
 
         incluirSerieAutomaticamente(
-                "Onde Está Meu Coração",
-                "Drama", "18+",
-                2021,
-                "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
-                "Globoplay");
+            "Onde Está Meu Coração",
+            "Drama", "18+",
+            2021,
+            "Uma médica enfrenta seus próprios conflitos enquanto lida com a vida na periferia de São Paulo.",
+            "Globoplay");
 
         incluirSerieAutomaticamente(
-                "Manhãs de Setembro",
-                "Drama", "14+",
-                2022,
-                "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
-                "Globoplay");
+            "Manhãs de Setembro",
+            "Drama", "14+",
+            2022,
+            "Histórias de uma pequena cidade do interior que revelam segredos antigos e conflitos locais.",
+            "Globoplay");
 
         incluirSerieAutomaticamente(
-                "Sob Pressão",
-                "Drama", "16+",
-                2017,
-                "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
-                "GloboPlay");
+            "Sob Pressão",
+            "Drama", "16+",
+            2017,
+            "O dia a dia de um hospital público do Rio de Janeiro, mostrando os desafios da equipe médica.",
+            "GloboPlay");
                 
         incluirSerieAutomaticamente(
-        "Irmandade",
-        "Crime/Drama", "16+",
-        2019,
-        "Uma advogada descobre que seu irmão está preso e lidera uma facção criminosa, colocando sua moral à prova.",
-        "Netflix");
+            "Irmandade",
+            "Crime/Drama", "16+",
+            2019,
+            "Uma advogada descobre que seu irmão está preso e lidera uma facção criminosa, colocando sua moral à prova.",
+            "Netflix");
 
         incluirSerieAutomaticamente(
             "Coisa Mais Linda",
