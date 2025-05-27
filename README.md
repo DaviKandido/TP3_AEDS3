@@ -108,7 +108,7 @@ sim
 sim
 O trabalho está completo?
 sim
-O trabalho é original e não a cópia de um trabalho de um colega
+O trabalho é original e não a cópia de um trabalho de um colega?
 sim
 
 
