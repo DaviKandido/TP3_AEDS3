@@ -741,7 +741,7 @@ public class MenuSeries {
             "Em um futuro distópico, jovens têm uma única chance de passar por um processo seletivo que garante acesso a uma vida melhor.",
             "Netflix");
 
-    }
+        }
 
     // Metodo para carregar stopords do arquivo
     public static List<String> carregarStopwords(String caminhoArquivo) throws IOException {
